@@ -1,7 +1,8 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from '@emotion/styled'
+import dayjs from 'dayjs'
 // import { ThemeProvider } from 'emotion-theming';書裡引入方法不能用了
-import { useTheme, ThemeProvider, withTheme } from '@emotion/react'
+import {ThemeProvider} from '@emotion/react'
 
 import { ReactComponent as DayCloudyIcon } from './images/day-cloudy.svg';
 import { ReactComponent as AirFlowIcon } from './images/airFlow.svg';
@@ -153,27 +154,65 @@ const App = () => {
     temperature: 32.1,
     rainPossibility: 60,
   });
-  async function getDataFromServer() {
-    const url = 'http://35.194.203.197/test.php';
 
-    const request = new Request(url, {
-      method: 'GET',
-      headers: new Headers({
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      }),
-    });
-    const response = await fetch(request);
-    const data = await response.json();
+  const AUTHORIZATION_KEY ='CWB-6F49758A-41B0-438C-B457-08D2C69B013A';
+  
+  const LOCATION_NAME ='臺北';
+    
+  //氣象資料開放平臺提供方式
+  // const url = `https://opendata.cwb.gov.tw/fileapi/v1/opendataapi/O-A0003-001?Authorization=${AUTHORIZATION_KEY}&format=JSON`;
 
-    console.log('data', data);
+  const url = `https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=${AUTHORIZATION_KEY}&locationName=${LOCATION_NAME}`
+
+  const  handleClick=()=> {
+    fetch(url)
+    .then( (response) => response.json())
+    .then( (data ) => {
+      console.log('取得「局屬氣象站-現在天氣觀測報告」data', data);
+      //  STEP 1：定義 `locationData` 把回傳的資料中會用到的部分取出來
+     const locationData = data.records.location[0];
+
+     // STEP 2：將風速（WDSD）和氣溫（TEMP）的資料取出
+     const weatherElements = locationData.weatherElement.reduce(
+       (neededElements, item) => {
+         if (['WDSD', 'TEMP'].includes(item.elementName)) {
+           neededElements[item.elementName] = item.elementValue;
+         }
+         return neededElements;
+       },
+       {}
+     );
+
+     // STEP 3：要使用到 React 組件中的資料
+     setCurrentWeather({
+       observationTime: locationData.time.obsTime,
+       locationName: locationData.locationName,
+       temperature: weatherElements.TEMP,
+       windSpeed: weatherElements.WDSD,
+       description: '多雲時晴',
+       rainPossibility: 60,
+     });
+  })
   }
 
-  // componentDidMount，一掛載就GET會員資料表
-  useEffect(() => {
-    getDataFromServer();
-    console.log('一掛載就讀取資料表');
-  }, []);
+  //為何這個沒用？
+  // async function handleClick() {
+  //   const request = new Request(url, {
+  //     method: 'GET',
+  //     headers: new Headers({
+  //       Accept: 'application/json',
+  //       'Content-Type': 'application/json',
+  //     }),
+  //   });
+  //   const response = await fetch(request);
+  //   const data = await response.json();
+  //   console.log('取得「局屬氣象站-現在天氣觀測報告」data', data);
+  // }
+  // // componentDidMount，一掛載就GET會員資料表
+  // useEffect(() => {
+  //   getDataFromServer();
+  //   console.log('一掛載就讀取資料表');
+  // }, []);
 
 
   return (
@@ -182,24 +221,30 @@ const App = () => {
     <ThemeProvider theme={theme[currentTheme]}>
     <Container>
       <WeatherCard>
-        <Location>台北市</Location>
-        <Description>多雲時晴</Description>
+        <Location>{currentWeather.locationName}</Location>
+        <Description>{currentWeather.description}</Description>
         <CurrentWeather>
           <Temperature>
-            23 <Celsius>°C</Celsius>
+          {Math.round(currentWeather.temperature)} <Celsius>°C</Celsius>
           </Temperature>
           <DayCloudy/>
         </CurrentWeather>
         <AirFlow>
         <AirFlowIcon/>
-        23 m/h
+        {currentWeather.windSpeed} m/h
         </AirFlow>
         <Rain>
         <RainIcon/>
-        48%
+        {currentWeather.rainPossibility} %
         </Rain>
         <Refresh>
-            最後觀測時間：上午 12:03 <RefreshIcon />
+            最後觀測時間：
+            {new Intl.DateTimeFormat('zh-TW', {
+              hour: 'numeric',
+              minute: 'numeric',
+            }).format(dayjs(currentWeather.observationTime))}{' '}
+            {/*(new Date(currentWeather.observationTime)) */}
+            <RefreshIcon onClick={handleClick}/>
           </Refresh>
       </WeatherCard>
     </Container>
