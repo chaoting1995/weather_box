@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import styled from '@emotion/styled'
 import dayjs from 'dayjs'
 // import { ThemeProvider } from 'emotion-theming';書裡引入方法不能用了
@@ -153,6 +153,7 @@ const App = () => {
     windSpeed: 3.6,
     temperature: 32.1,
     rainPossibility: 60,
+    isLoading: true,
   });
 
   const AUTHORIZATION_KEY ='CWB-6F49758A-41B0-438C-B457-08D2C69B013A';
@@ -164,7 +165,7 @@ const App = () => {
 
   const url = `https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=${AUTHORIZATION_KEY}&locationName=${LOCATION_NAME}`
 
-  const  handleClick=()=> {
+  const  fetchCurrentWeather=()=> {
     fetch(url)
     .then( (response) => response.json())
     .then( (data ) => {
@@ -191,10 +192,17 @@ const App = () => {
        windSpeed: weatherElements.WDSD,
        description: '多雲時晴',
        rainPossibility: 60,
+       isLoading: false,
      });
   })
   }
+  // // componentDidMount，一掛載就GET會員資料表
+  useEffect(() => {
+    fetchCurrentWeather();
+    console.log('一掛載就讀取「局屬氣象站-現在天氣觀測報告」data');
+  }, []);
 
+  
   //為何這個沒用？
   // async function handleClick() {
   //   const request = new Request(url, {
@@ -208,11 +216,6 @@ const App = () => {
   //   const data = await response.json();
   //   console.log('取得「局屬氣象站-現在天氣觀測報告」data', data);
   // }
-  // // componentDidMount，一掛載就GET會員資料表
-  // useEffect(() => {
-  //   getDataFromServer();
-  //   console.log('一掛載就讀取資料表');
-  // }, []);
 
 
   return (
@@ -244,7 +247,7 @@ const App = () => {
               minute: 'numeric',
             }).format(dayjs(currentWeather.observationTime))}{' '}
             {/*(new Date(currentWeather.observationTime)) */}
-            <RefreshIcon onClick={handleClick}/>
+            <RefreshIcon onClick={fetchCurrentWeather}/>
           </Refresh>
       </WeatherCard>
     </Container>
