@@ -3,6 +3,7 @@ import React, { useCallback,useState,useEffect, useMemo } from 'react';
 // import { ThemeProvider } from 'emotion-theming';書裡引入方法不能用了
 import {ThemeProvider} from '@emotion/react'
 import WeatherCard from './views/WeatherCard';
+import WeatherSetting from './views/WeatherSetting';
 import { getMoment } from './utils/helpers'
 import styled from '@emotion/styled';
 
@@ -133,7 +134,12 @@ const LOCATION_NAME_FORECAST ='臺北市';
 
 const App = () => {
   // const [currentTheme, setCurrentTheme] = useState('light');
-  const [currentTheme,setCurrentTheme] = useState('light');
+  const [ currentTheme , setCurrentTheme ] = useState('light');
+  const [ currentPage , setCurrentPage ] = useState('WeatherCard');
+const handleCurrentPageChange = (currentPage) => {
+  setCurrentPage(currentPage);
+
+}
 
    //定義會使用到的資料狀態
   //  const [currentWeather, setWeatherElement] = useState({
@@ -152,9 +158,6 @@ const App = () => {
   //判斷日夜( getMoment，傳入城市，回傳day or night)
   // 錯誤示範：const moment = useMemo(()=>{ getMoment(LOCATION_NAME_FORECAST); },[]) //抓了半天的臭蟲
   const moment = useMemo(() => getMoment(LOCATION_NAME_FORECAST), []);
-console.log('moment',moment);
-console.log('getMoment(LOCATION_NAME_FORECAST)',getMoment(LOCATION_NAME_FORECAST));
-
   //依日夜變更主題
   useEffect(() => {
     setCurrentTheme( moment === 'day' ? 'light' : 'dark');
@@ -206,11 +209,17 @@ console.log('getMoment(LOCATION_NAME_FORECAST)',getMoment(LOCATION_NAME_FORECAST
     // <ThemeProvider theme={theme.currentTheme}>//不能寫成這樣會爛掉
     <ThemeProvider theme={theme[currentTheme]}>
     <Container>
+    {currentPage === 'WeatherCard' && (
       <WeatherCard
         weatherElement={weatherElement}
         moment={moment}
         fetchData={fetchData}
+        handleCurrentPageChange={handleCurrentPageChange}
       />
+      )}
+    {currentPage === 'WeatherSetting' && (
+      <WeatherSetting handleCurrentPageChange={handleCurrentPageChange}/>
+    )}
     </Container>
   </ThemeProvider>
   );

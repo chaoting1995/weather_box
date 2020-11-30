@@ -8,6 +8,7 @@ import { ReactComponent as AirFlowIcon } from './../images/airFlow.svg';
 import { ReactComponent as RainIcon } from './../images/rain.svg';
 import { ReactComponent as RefreshIcon } from './../images/refresh.svg';
 import { ReactComponent as LoadingIcon } from './../images/loading.svg';
+import { ReactComponent as CogIcon } from './../images/cog.svg';
 
 const WeatherCardWrapper = styled.div`
   position: relative;
@@ -80,6 +81,15 @@ const Rain = styled.div`
   }
 `;
 
+const Cog = styled(CogIcon)`
+  position: absolute;
+  top: 30px;
+  right: 15px;
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+`;
+
 
 //樣板
 // const DayCloudy = styled(DayCloudyIcon)`
@@ -124,7 +134,7 @@ const Refresh = styled.div`
 
 const WeatherCard = (props) => {
 
-  const { weatherElement, moment, fetchData } = props;
+  const { weatherElement, moment, fetchData ,handleCurrentPageChange } = props;
  
   const {
     observationTime,
@@ -140,6 +150,7 @@ const WeatherCard = (props) => {
 
   return (
     <WeatherCardWrapper>
+    <Cog onClick={() => handleCurrentPageChange('WeatherSetting')}/>
       <Location>{locationName}</Location>
       <Description>
         {description} {comfortability}
