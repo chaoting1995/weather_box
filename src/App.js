@@ -1,16 +1,10 @@
-import React, { useCallback,useState,useEffect } from 'react';
-import styled from '@emotion/styled'
-import dayjs from 'dayjs'
+import React, { useCallback,useState,useEffect, useMemo } from 'react';
+
 // import { ThemeProvider } from 'emotion-theming';書裡引入方法不能用了
 import {ThemeProvider} from '@emotion/react'
-
-import WeatherIcon from './components/WeatherIcon'
-
-import { ReactComponent as DayCloudyIcon } from './images/day-cloudy.svg';
-import { ReactComponent as AirFlowIcon } from './images/airFlow.svg';
-import { ReactComponent as RainIcon } from './images/rain.svg';
-import { ReactComponent as RefreshIcon } from './images/refresh.svg';
-import { ReactComponent as LoadingIcon } from './images/loading.svg';
+import WeatherCard from './views/WeatherCard';
+import { getMoment } from './utils/helpers'
+import styled from '@emotion/styled';
 
 //定義主題配色
 const theme = {
@@ -42,135 +36,22 @@ const Container = styled.div`
   justify-content: center;
 `;
 
-const WeatherCard= styled.div`
-  position: relative;
-  min-width: 360px;
-  box-shadow: ${({ theme }) => theme.boxShadow};
-  background-color: ${({ theme }) => theme.foregroundColor};
-  box-sizing: border-box;
-  padding: 30px 15px;
-  `;
-// 透過 props 取得傳進來的資料
-// props 會是 {theme: "dark", children: "台北市"}
-const Location = styled.div`
-  ${'' /* ${props => console.log(props)} */}
-  ${'' /* color: ${props => props.theme === 'dark' ? '#dadada' : '#212121'}; */}
-  color: ${({ theme }) => theme.titleColor};
-  font-size: 28px;
-  margin-bottom: 20px;
-`;
-  const Description = styled.div`
-  font-size: 16px;
-  color: ${({ theme }) => theme.textColor};
-  margin-bottom: 30px;
-`;
-  
-  const CurrentWeather = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-`;
 
-const Temperature = styled.div`
-color: ${({ theme }) => theme.temperatureColor};
-  font-size: 96px;
-  font-weight: 300;
-  display: flex;
-`;
-
-const Celsius = styled.div`
-  font-weight: normal;
-  font-size: 42px;
-`;
+const AUTHORIZATION_KEY ='CWB-6F49758A-41B0-438C-B457-08D2C69B013A';
+const LOCATION_NAME ='臺北';
+const LOCATION_NAME_FORECAST ='臺北市';
 
 
-const AirFlow = styled.div`
-  display: flex;
-  align-items: center;
-  font-size: 16x;
-  font-weight: 300;
-  color: ${({ theme }) => theme.textColor};
-  margin-bottom: 20px;
-
-  svg {
-    width: 25px;
-    height: auto;
-    margin-right: 30px;
-  }
-`;
-
-const Rain = styled.div`
-  display: flex;
-  align-items: center;
-  font-size: 16x;
-  font-weight: 300;
-  color: ${({ theme }) => theme.textColor};
-
-  svg {
-    width: 25px;
-    height: auto;
-    margin-right: 30px;
-  }
-`;
-
-const DayCloudy = styled(DayCloudyIcon)`
-  flex-basis: 30%;
-`;
-
-// const Refresh = styled(RefreshIcon)`
-//   /* 在這裡寫入 CSS 樣式 */
-//   width: 15px;
-//   height: 15px;
-//   position: absolute;
-//   right: 15px;
-//   bottom: 15px;
-//   cursor: pointer;
-// `;
-
-const Refresh = styled.div`
-  position: absolute;
-  right: 15px;
-  bottom: 15px;
-  font-size: 12px;
-  display: inline-flex;
-  align-items: flex-end;
-  color: ${({ theme }) => theme.textColor};
-
-    svg {
-    margin-left: 10px;
-    width: 15px;
-    height: 15px;
-    cursor: pointer;
-    /* STEP 2：使用 rotate 動畫效果在 svg 圖示上 */
-    animation: rotate infinite 1.5s linear;
-    animation-duration: ${({ isLoading }) => (isLoading ? '1.5s' : '0s')};
-  }
-  /* STEP 1：定義旋轉的動畫效果，並取名為 rotate */
-  @keyframes rotate {
-    from {
-      transform: rotate(360deg);
-    }
-    to {
-      transform: rotate(0deg);
-    }
-  }
-`;
-
-   
   //氣象資料開放平臺提供方式
   // const url = `https://opendata.cwb.gov.tw/fileapi/v1/opendataapi/O-A0003-001?Authorization=${AUTHORIZATION_KEY}&format=JSON`;
 
   const  fetchCurrentWeather=()=> {
-      
     // //拉取資料前，設定載入指示器的狀態為true
     //   setWeatherElement((prevState) => ({
     //     ...prevState,
     //     isLoading: true,
     //   }));
 
-    const AUTHORIZATION_KEY ='CWB-6F49758A-41B0-438C-B457-08D2C69B013A';
-    const LOCATION_NAME ='臺北';
     const url = `https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=${AUTHORIZATION_KEY}&locationName=${LOCATION_NAME}`
     
     return fetch(url)
@@ -210,6 +91,8 @@ const Refresh = styled.div`
   })
   }
 
+
+
   const  fetchWeatherForecast = () => {
   
     //拉取資料前，設定載入指示器的狀態為true
@@ -218,10 +101,7 @@ const Refresh = styled.div`
       //   isLoading: true,
       // }));
 
-    const AUTHORIZATION_KEY ='CWB-6F49758A-41B0-438C-B457-08D2C69B013A';
-    const LOCATION_NAME ='臺北市';
-
-    const url = `https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=${AUTHORIZATION_KEY}&locationName=${LOCATION_NAME}`
+    const url = `https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=${AUTHORIZATION_KEY}&locationName=${LOCATION_NAME_FORECAST}`
     
     return fetch(url)
     .then( (response) => response.json())
@@ -253,7 +133,7 @@ const Refresh = styled.div`
 
 const App = () => {
   // const [currentTheme, setCurrentTheme] = useState('light');
-  const [currentTheme] = useState('dark');
+  const [currentTheme,setCurrentTheme] = useState('light');
 
    //定義會使用到的資料狀態
   //  const [currentWeather, setWeatherElement] = useState({
@@ -269,21 +149,18 @@ const App = () => {
       isLoading: true,
   });
  
-   //從狀態中解構
-   const {
-    observationTime,
-    locationName,
-    description,
-    windSpeed,
-    temperature,
-    rainPossibility,
-    comfortability,
-    isLoading,
-    weatherCode,
-  } = weatherElement;
+  //判斷日夜( getMoment，傳入城市，回傳day or night)
+  // 錯誤示範：const moment = useMemo(()=>{ getMoment(LOCATION_NAME_FORECAST); },[]) //抓了半天的臭蟲
+  const moment = useMemo(() => getMoment(LOCATION_NAME_FORECAST), []);
+console.log('moment',moment);
+console.log('getMoment(LOCATION_NAME_FORECAST)',getMoment(LOCATION_NAME_FORECAST));
+
+  //依日夜變更主題
+  useEffect(() => {
+    setCurrentTheme( moment === 'day' ? 'light' : 'dark');
+  },[])
 
   const fetchData = useCallback(async () => {
-
       //拉取資料前，設定載入指示器的狀態為true
       setWeatherElement((prevState) => ({
         ...prevState,
@@ -329,38 +206,13 @@ const App = () => {
     // <ThemeProvider theme={theme.currentTheme}>//不能寫成這樣會爛掉
     <ThemeProvider theme={theme[currentTheme]}>
     <Container>
-      <WeatherCard>
-        <Location>{locationName}</Location>
-        <Description>{description} {comfortability}</Description>
-        <CurrentWeather>
-          <Temperature>
-          {Math.round(temperature)} <Celsius>°C</Celsius>
-          </Temperature>
-          <WeatherIcon weatherCode={weatherCode} moment="night"/>
-        </CurrentWeather>
-        <AirFlow>
-        <AirFlowIcon/>
-        {windSpeed} m/h
-        </AirFlow>
-        <Rain>
-        <RainIcon/>
-        {rainPossibility} %
-        </Rain>
-        <Refresh 
-          onClick={fetchData} 
-          isLoading={isLoading}
-          >
-            最後觀測時間：
-            {new Intl.DateTimeFormat('zh-TW', {
-              hour: 'numeric',
-              minute: 'numeric',
-            }).format(dayjs(observationTime))}{' '}
-            {/*(new Date(observationTime)) */}
-            {isLoading ? <LoadingIcon /> : <RefreshIcon />}
-          </Refresh>
-      </WeatherCard>
+      <WeatherCard
+        weatherElement={weatherElement}
+        moment={moment}
+        fetchData={fetchData}
+      />
     </Container>
-    </ThemeProvider>
+  </ThemeProvider>
   );
 };
 

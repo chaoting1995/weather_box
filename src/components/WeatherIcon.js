@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useMemo} from 'react';
 import styled from '@emotion/styled';
 import { ReactComponent as DayThunderstorm } from './../images/day-thunderstorm.svg';
 import { ReactComponent as DayClear } from './../images/day-clear.svg';
@@ -66,21 +66,20 @@ const weatherTypes = {
       return weatherType;  
     };
 
-    const weatherCode = 1;
-    console.log(weatherCode2type(weatherCode));
-
 
 const WeatherIcon = (props) => {
     const { weatherCode , moment } = props;
-    const weatherType =weatherCode2type(weatherCode);
-    const WeatherIcon = weatherIcons[moment][weatherType] 
+    
+    const weatherType =  useMemo (() => weatherCode2type(weatherCode),[weatherCode]);
+
+    const weatherIcon = weatherIcons[moment][weatherType]; 
 
 return (
     <>
         <IconContainer>
-            {WeatherIcon}
+            {weatherIcon}
         </IconContainer>
     </>
 )
-}
+};
 export default WeatherIcon;
