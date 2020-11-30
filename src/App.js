@@ -1,8 +1,10 @@
-import React, { useState,useEffect } from 'react';
+import React, { useCallback,useState,useEffect } from 'react';
 import styled from '@emotion/styled'
 import dayjs from 'dayjs'
 // import { ThemeProvider } from 'emotion-theming';書裡引入方法不能用了
 import {ThemeProvider} from '@emotion/react'
+
+import WeatherIcon from './components/WeatherIcon'
 
 import { ReactComponent as DayCloudyIcon } from './images/day-cloudy.svg';
 import { ReactComponent as AirFlowIcon } from './images/airFlow.svg';
@@ -155,38 +157,23 @@ const Refresh = styled.div`
   }
 `;
 
-const App = () => {
-  // const [currentTheme, setCurrentTheme] = useState('light');
-  const [currentTheme, setCurrentTheme] = useState('dark');
-
-   //定義會使用到的資料狀態
-   const [currentWeather, setCurrentWeather] = useState({
-    observationTime: '2020-12-12 22:10:00',
-    locationName: '臺北市',
-    description: '多雲時晴',
-    windSpeed: 3.6,
-    temperature: 32.1,
-    rainPossibility: 60,
-    isLoading: true,
-  });
-
-  const AUTHORIZATION_KEY ='CWB-6F49758A-41B0-438C-B457-08D2C69B013A';
-  const LOCATION_NAME ='臺北';
-    
+   
   //氣象資料開放平臺提供方式
   // const url = `https://opendata.cwb.gov.tw/fileapi/v1/opendataapi/O-A0003-001?Authorization=${AUTHORIZATION_KEY}&format=JSON`;
 
-  const url = `https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=${AUTHORIZATION_KEY}&locationName=${LOCATION_NAME}`
-
   const  fetchCurrentWeather=()=> {
       
-    //拉取資料前，設定載入指示器的狀態為true
-      setCurrentWeather((prevState) => ({
-        ...prevState,
-        isLoading: true,
-      }));
+    // //拉取資料前，設定載入指示器的狀態為true
+    //   setWeatherElement((prevState) => ({
+    //     ...prevState,
+    //     isLoading: true,
+    //   }));
 
-    fetch(url)
+    const AUTHORIZATION_KEY ='CWB-6F49758A-41B0-438C-B457-08D2C69B013A';
+    const LOCATION_NAME ='臺北';
+    const url = `https://opendata.cwb.gov.tw/api/v1/rest/datastore/O-A0003-001?Authorization=${AUTHORIZATION_KEY}&locationName=${LOCATION_NAME}`
+    
+    return fetch(url)
     .then( (response) => response.json())
     .then( (data ) => {
       console.log('取得「局屬氣象站-現在天氣觀測報告」data', data);
@@ -205,18 +192,83 @@ const App = () => {
      );
 
      // STEP 3：要使用到 React 組件中的資料
-     setCurrentWeather({
-       observationTime: locationData.time.obsTime,
-       locationName: locationData.locationName,
-       temperature: weatherElements.TEMP,
-       windSpeed: weatherElements.WDSD,
-       description: '多雲時晴',
-       rainPossibility: 60,
-       isLoading: false,
-     });
+    //  setWeatherElement((prevState)=>({
+    //   ...prevState,
+    //    observationTime: locationData.time.obsTime,
+    //    locationName: locationData.locationName,
+    //    temperature: weatherElements.TEMP,
+    //    windSpeed: weatherElements.WDSD,
+    //    isLoading: false,
+    //  }));
+
+    return{
+         observationTime: locationData.time.obsTime,
+         locationName: locationData.locationName,
+         temperature: weatherElements.TEMP,
+         windSpeed: weatherElements.WDSD,
+       }
   })
   }
 
+  const  fetchWeatherForecast = () => {
+  
+    //拉取資料前，設定載入指示器的狀態為true
+      // setWeatherElement((prevState) => ({
+      //   ...prevState,
+      //   isLoading: true,
+      // }));
+
+    const AUTHORIZATION_KEY ='CWB-6F49758A-41B0-438C-B457-08D2C69B013A';
+    const LOCATION_NAME ='臺北市';
+
+    const url = `https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001?Authorization=${AUTHORIZATION_KEY}&locationName=${LOCATION_NAME}`
+    
+    return fetch(url)
+    .then( (response) => response.json())
+    .then( (data ) => {
+      console.log('取得「一般天氣預報-今明 36 小時天氣預報」data', data);
+      //  STEP 1：定義 `locationData` 把回傳的資料中會用到的部分取出來
+     const locationData = data.records.location[0];
+
+     // STEP 2：取出 天氣現象'Wx', 降雨機率'PoP',舒適度 'CI'
+     const weatherElements = locationData.weatherElement.reduce(
+      (neededElements, item) => {
+        if (['Wx', 'PoP', 'CI'].includes(item.elementName)) {
+          neededElements[item.elementName] = item.time[0].parameter;
+        }
+        return neededElements;
+       },
+       {}
+     );
+
+     return{
+      description: weatherElements.Wx.parameterName,
+      weatherCode: weatherElements.Wx.parameterValue,
+      rainPossibility: weatherElements.PoP.parameterName,
+      comfortability: weatherElements.CI.parameterName,
+     };
+  })
+  }
+
+
+const App = () => {
+  // const [currentTheme, setCurrentTheme] = useState('light');
+  const [currentTheme] = useState('dark');
+
+   //定義會使用到的資料狀態
+  //  const [currentWeather, setWeatherElement] = useState({
+    const [weatherElement, setWeatherElement] = useState({
+      observationTime: new Date(),
+      locationName: '',
+      temperature: 0,
+      windSpeed: 0,
+      description: '',
+      weatherCode: 0,
+      rainPossibility: 0,
+      comfortability: '',
+      isLoading: true,
+  });
+ 
    //從狀態中解構
    const {
     observationTime,
@@ -225,14 +277,36 @@ const App = () => {
     windSpeed,
     temperature,
     rainPossibility,
+    comfortability,
     isLoading,
-  } = currentWeather;
+    weatherCode,
+  } = weatherElement;
 
-  // // componentDidMount，一掛載就GET會員資料表
+  const fetchData = useCallback(async () => {
+
+      //拉取資料前，設定載入指示器的狀態為true
+      setWeatherElement((prevState) => ({
+        ...prevState,
+        isLoading: true,
+      }));
+
+      const [currentWeather, weatherForecast] = await Promise.all([
+        fetchCurrentWeather(),
+        fetchWeatherForecast(),
+      ]);
+    
+    // console.log('一掛載就讀取「局屬氣象站-現在天氣觀測報告」&「一般天氣預報-今明 36 小時天氣預報」',data);
+    setWeatherElement({
+      ...currentWeather,
+      ...weatherForecast,
+      isLoading: false,
+    });
+  },[]);
+  
+  // // componentDidMount，一掛載就GET資料
   useEffect(() => {
-    fetchCurrentWeather();
-    console.log('一掛載就讀取「局屬氣象站-現在天氣觀測報告」data');
-  }, []);
+    fetchData();
+  }, [fetchData]);
 
   
   //為何這個沒用？
@@ -257,12 +331,12 @@ const App = () => {
     <Container>
       <WeatherCard>
         <Location>{locationName}</Location>
-        <Description>{description}</Description>
+        <Description>{description} {comfortability}</Description>
         <CurrentWeather>
           <Temperature>
           {Math.round(temperature)} <Celsius>°C</Celsius>
           </Temperature>
-          <DayCloudy/>
+          <WeatherIcon weatherCode={weatherCode} moment="night"/>
         </CurrentWeather>
         <AirFlow>
         <AirFlowIcon/>
@@ -272,7 +346,10 @@ const App = () => {
         <RainIcon/>
         {rainPossibility} %
         </Rain>
-        <Refresh onClick={fetchCurrentWeather} isLoading={isLoading}>
+        <Refresh 
+          onClick={fetchData} 
+          isLoading={isLoading}
+          >
             最後觀測時間：
             {new Intl.DateTimeFormat('zh-TW', {
               hour: 'numeric',
