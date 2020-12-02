@@ -90,7 +90,6 @@ const Cog = styled(CogIcon)`
   cursor: pointer;
 `;
 
-
 //樣板
 // const DayCloudy = styled(DayCloudyIcon)`
 //   flex-basis: 30%;
@@ -133,9 +132,14 @@ const Refresh = styled.div`
 `;
 
 const WeatherCard = (props) => {
+  const {
+    weatherElement,
+    moment,
+    fetchData,
+    handleCurrentPageChange,
+    cityName,
+  } = props;
 
-  const { weatherElement, moment, fetchData ,handleCurrentPageChange ,cityName } = props;
- 
   const {
     observationTime,
     locationName,
@@ -150,7 +154,7 @@ const WeatherCard = (props) => {
 
   return (
     <WeatherCardWrapper>
-    <Cog onClick={() => handleCurrentPageChange('WeatherSetting')}/>
+      <Cog onClick={() => handleCurrentPageChange('WeatherSetting')} />
       <Location>{cityName}</Location>
       <Description>
         {description} {comfortability}

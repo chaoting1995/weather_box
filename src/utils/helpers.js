@@ -47,7 +47,6 @@ export const getMoment = (locationName) => {
     : 'night';
 };
 
-
 export const availableLocations = [
   {
     cityName: '宜蘭縣',
